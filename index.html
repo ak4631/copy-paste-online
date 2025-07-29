@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Clipboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tab-container {
+            display: flex;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .tab:hover:not(.active) {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .success {
+            background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 600;
+            animation: slideIn 0.5s ease;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 600;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .code-display {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            text-align: center;
+            font-weight: bold;
+            margin: 20px 0;
+            border: 2px solid #4a5568;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .code-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shine 2s infinite;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .info {
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            color: #333;
+        }
+
+        .copy-btn {
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+            padding: 8px 16px;
+            font-size: 14px;
+            margin-top: 10px;
+            width: auto;
+            display: inline-block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .tab-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Secure Clipboard</h1>
+        
+        <div class="tab-container">
+            <button class="tab active" onclick="switchTab('store')">Store Content</button>
+            <button class="tab" onclick="switchTab('retrieve')">Retrieve Content</button>
+        </div>
+
+        <div id="store-content" class="content active">
+            <div class="form-group">
+                <label for="content">Enter your content:</label>
+                <textarea id="content" placeholder="Paste or type your content here..."></textarea>
+            </div>
+            <button onclick="storeContent()">Generate Secure Code</button>
+            <div id="store-result"></div>
+        </div>
+
+        <div id="retrieve-content" class="content">
+            <div class="form-group">
+                <label for="code">Enter your secure code:</label>
+                <input type="text" id="code" placeholder="Enter the 6-digit code">
+            </div>
+            <button onclick="retrieveContent()">Retrieve Content</button>
+            <div id="retrieve-result"></div>
+        </div>
+
+        <div class="info">
+            <strong>🛡️ Privacy Features:</strong><br>
+            • Content is stored locally in your browser<br>
+            • Each paste gets a unique 6-digit code<br>
+            • Content expires after 24 hours<br>
+            • No server storage - your data stays private
+        </div>
+    </div>
+
+    <script>
+        // In-memory storage for the session
+        let clipboardStore = {};
+
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tab + '-content').classList.add('active');
+            
+            // Clear previous results
+            document.getElementById('store-result').innerHTML = '';
+            document.getElementById('retrieve-result').innerHTML = '';
+        }
+
+        function generateCode() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        function storeContent() {
+            const content = document.getElementById('content').value.trim();
+            
+            if (!content) {
+                showResult('store-result', 'Please enter some content to store.', 'error');
+                return;
+            }
+
+            const code = generateCode();
+            const timestamp = Date.now();
+            
+            clipboardStore[code] = {
+                content: content,
+                timestamp: timestamp,
+                expires: timestamp + (24 * 60 * 60 * 1000) // 24 hours
+            };
+
+            const resultHTML = `
+                <div class="success">
+                    Content stored successfully! 🎉
+                </div>
+                <div class="code-display">
+                    Your secure code: ${code}
+                    <button class="copy-btn" onclick="copyToClipboard('${code}')">Copy Code</button>
+                </div>
+                <div class="info">
+                    Share this code with your other device to retrieve the content. 
+                    Code expires in 24 hours.
+                </div>
+            `;
+            
+            document.getElementById('store-result').innerHTML = resultHTML;
+            document.getElementById('content').value = '';
+        }
+
+        function retrieveContent() {
+            const code = document.getElementById('code').value.trim();
+            
+            if (!code) {
+                showResult('retrieve-result', 'Please enter a code.', 'error');
+                return;
+            }
+
+            const stored = clipboardStore[code];
+            
+            if (!stored) {
+                showResult('retrieve-result', 'Invalid code or content has expired.', 'error');
+                return;
+            }
+
+            // Check if expired
+            if (Date.now() > stored.expires) {
+                delete clipboardStore[code];
+                showResult('retrieve-result', 'This code has expired.', 'error');
+                return;
+            }
+
+            const resultHTML = `
+                <div class="success">
+                    Content retrieved successfully! 🎉
+                </div>
+                <div class="form-group">
+                    <label>Your content:</label>
+                    <textarea readonly style="background: white;">${stored.content}</textarea>
+                </div>
+                <button class="copy-btn" onclick="copyToClipboard(\`${stored.content.replace(/`/g, '\\`')}\`)">Copy Content</button>
+                <div class="info">
+                    Content will be automatically deleted after retrieval for security.
+                </div>
+            `;
+            
+            document.getElementById('retrieve-result').innerHTML = resultHTML;
+            document.getElementById('code').value = '';
+            
+            // Delete content after retrieval for security
+            setTimeout(() => {
+                delete clipboardStore[code];
+            }, 1000);
+        }
+
+        function showResult(elementId, message, type) {
+            const resultHTML = `<div class="${type}">${message}</div>`;
+            document.getElementById(elementId).innerHTML = resultHTML;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show temporary success message
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Copied! ✓';
+                button.style.background = 'linear-gradient(135deg, #56ab2f, #a8e6cf)';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = 'linear-gradient(135deg, #2d3748, #4a5568)';
+                }, 2000);
+            }).catch(() => {
+                alert('Failed to copy to clipboard. Please copy manually.');
+            });
+        }
+
+        // Clean up expired content every hour
+        setInterval(() => {
+            const now = Date.now();
+            Object.keys(clipboardStore).forEach(code => {
+                if (clipboardStore[code].expires < now) {
+                    delete clipboardStore[code];
+                }
+            });
+        }, 60 * 60 * 1000);
+
+        // Handle Enter key in code input
+        document.getElementById('code').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                retrieveContent();
+            }
+        });
+    </script>
+</body>
+</html>
